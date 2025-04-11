@@ -18,7 +18,6 @@ class Paint(Frame):
         self.brush_size = new_size
     def save_canvas(self):
         self.canv.postscript(file="tmp_canvas.eps")
-        pass
     def setUI(self):
         # Устанавливаем название окна
         self.parent.title("Demo Paint")
