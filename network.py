@@ -14,10 +14,17 @@ def to_full(y, num_classes):
 
 def n_array_to_array(n_array):
     return n_array.flatten().reshape(1, -1)  # Плоский массив в форму (1, -1)
-
+def max_index(array):
+    max_index = 0
+    max = array[0][0]
+    for item in range(len(array[0])):
+        if max < array[0][item]:
+            max_index = item
+            max = array[0][item]
+    return max_index
 arr_los = []
 
-def load(filename):
+def load_network(filename):
     f = open(filename, "r")
     data = json.load(f)
     f.close()
@@ -82,12 +89,5 @@ class NeuralNetwork:
                 self.feedforward(x_array)
                 self.backpropagate(x_array, y_array, learning_rate)
 
-def max_index(array):
-    max_index = 0
-    max = array[0][0]
-    for item in range(len(array[0])):
-        if max < array[0][item]:
-            max_index = item
-            max = array[0][item]
-    return max_index
+
 # Инициализация и обучение
