@@ -130,7 +130,7 @@ class Paint(Frame):
         
     def __init__(self, parent):
         Frame.__init__(self, parent)
-        self.network = load_network("neuron_networ.json")
+        self.network = load_network("neuron.json")
         self.brush_size = 3
         self.color = "black"
         self.parent = parent
