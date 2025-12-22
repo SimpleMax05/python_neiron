@@ -1,5 +1,9 @@
 from tkinter import *
 from tkinter.messagebox import *
+from PIL import Image
+import cv2
+import numpy as np
+
 
 # класс Paint
 class Paint(Frame):
@@ -11,14 +15,57 @@ class Paint(Frame):
                               fill=self.color, outline=self.color)
     def set_color(self, new_color):
         self.color = new_color
+    def rec_digit(self, img_path):
+        img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+        gray = 255-img
+        # применяем пороговую обработку
+        (thresh, gray) = cv2.threshold(gray, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
 
-        # Изменение размера кисти
+        # удаляем нулевые строки и столбцы
+        while np.sum(gray[0]) == 0:
+            gray = gray[1:]
+        while np.sum(gray[:,0]) == 0:
+            gray = np.delete(gray,0,1)
+        while np.sum(gray[-1]) == 0:
+            gray = gray[:-1]
+        while np.sum(gray[:,-1]) == 0:
+            gray = np.delete(gray,-1,1)
+        rows, сols = gray.shape
 
+        # изменяем размер, чтобы помещалось в box 20x20 пикселей
+        if rows > cols:
+            factor = 20.0/rows
+            rows = 20
+            cols = int(round(cols*factor))
+            gray = cv2.resize(gray, (cols,rows))
+        else:
+            factor = 20.0/cols
+            cols = 20
+            rows = int(round(rows*factor))
+            gray = cv2.resize(gray, (cols, rows))
+
+        cv2.imwrite('gray'+ img_path, gray)
+        gray = cv2.resize(gray, (28, 28))
+        img = gray / 255.0
+        img = np.array(img).reshape(-1, 28, 28, 1)
+        print("img", img)
+        # out = str(np.argmax(model.predict(img)))
+        return img
+    # Изменение размера кисти
     def set_brush_size(self, new_size):
         self.brush_size = new_size
     def save_canvas(self):
-        self.canv.postscript(file="tmp_canvas.eps")
+        self.canv.postscript(file='tmp_canvas.ps', colormode='color')
+        # self.rec_digit('tmp_canvas.ps')
+        img = Image.open('tmp_canvas.ps')
+        img.save('./canvas.png')
+        # pixel_array = np.array(image)
+        # print("pixel_array", pixel_array)
         pass
+    def image_to_number(self):
+
+        pass
+
     def setUI(self):
         # Устанавливаем название окна
         self.parent.title("Demo Paint")
@@ -60,6 +107,8 @@ class Paint(Frame):
         one_btn.grid(row=1, column=1)
 
         clear_btn = Button(self, text="Очистить", width=10, command=lambda: self.canv.delete("all"))
+        clear_btn.grid(row=0, column=2, sticky=W)
+        clear_btn = Button(self, text="Вычислить", width=10, command=lambda: self.image_to_number())
         clear_btn.grid(row=0, column=3, sticky=W)
         save_btn = Button(self, text="Сохранить", width=10, command=lambda: self.save_canvas())
         save_btn.grid(row=0, column=4, sticky=W)
@@ -72,17 +121,6 @@ class Paint(Frame):
         self.setUI()
         self.canv.bind("<B1-Motion>", self.draw)
 
-
-# выход из программы  
-def close_win():
-    if askyesno("Выход", "Вы уверены?"):
-        root.destroy()
-
-# вывод справки    
-def about():
-  showinfo("Demo Paint", "Простейшая рисовалка от сайта: https://it-black.ru")
-
-
 # функция для создания главного окна
 def main():
     global root
@@ -91,15 +129,7 @@ def main():
     app = Paint(root)
     m = Menu(root)
     root.config(menu=m)
-
-    fm = Menu(m)
-    m.add_cascade(label="Файл", menu=fm)
-    fm.add_command(label="Выход", command=close_win)
-
-    hm = Menu(m)
-    m.add_cascade(label="Справка", menu=hm)
-    hm.add_command(label="О программе", command=about)
-    
     root.mainloop()
+
 if __name__ == "__main__":
     main()

@@ -40,6 +40,7 @@ class NeuralNetwork:
         f = open(filename, "w")
         json.dump(data, f)
         f.close()
+    # Получить ответ на вход передаётся массив из входных элементов
     def feedforward(self, X):
         self.layer_input = []
         self.layer_output = []
@@ -55,7 +56,7 @@ class NeuralNetwork:
 
     def backpropagate(self, X, y, learning_rate):
         output_error = y - self.layer_output[-1]
-        
+
         # Упрощение логирования потерь
         loss = np.sum(np.abs(output_error))
         arr_los.append(loss)
