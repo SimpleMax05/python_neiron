@@ -1,12 +1,29 @@
+from scipy.ndimage.measurements import center_of_mass
+import math
 from tkinter import *
 from tkinter.messagebox import *
 from PIL import Image
 import cv2
 import numpy as np
+from network import load
 
 
+def getBestShift(img):
+        cy,cx = center_of_mass(img)
+
+        rows,cols = img.shape
+        shiftx = np.round(cols/2.0-cx).astype(int)
+        shifty = np.round(rows/2.0-cy).astype(int)
+
+        return shiftx,shifty
+def shift(img,sx,sy):
+        rows,cols = img.shape
+        M = np.float32([[1,0,sx],[0,1,sy]])
+        shifted = cv2.warpAffine(img,M,(cols,rows))
+        return shifted
 # класс Paint
 class Paint(Frame):
+    net = load("neuron_networ.json")
     def draw(self, event):
         self.canv.create_oval(event.x - self.brush_size,
                               event.y - self.brush_size,
@@ -15,6 +32,10 @@ class Paint(Frame):
                               fill=self.color, outline=self.color)
     def set_color(self, new_color):
         self.color = new_color
+
+
+
+
     def rec_digit(self, img_path):
         img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
         gray = 255-img
@@ -30,7 +51,7 @@ class Paint(Frame):
             gray = gray[:-1]
         while np.sum(gray[:,-1]) == 0:
             gray = np.delete(gray,-1,1)
-        rows, сols = gray.shape
+        rows,cols = gray.shape
 
         # изменяем размер, чтобы помещалось в box 20x20 пикселей
         if rows > cols:
@@ -44,26 +65,36 @@ class Paint(Frame):
             rows = int(round(rows*factor))
             gray = cv2.resize(gray, (cols, rows))
 
+        # расширяем до размера 28x28
+        colsPadding = (int(math.ceil((28-cols)/2.0)),int(math.floor((28-cols)/2.0)))
+        rowsPadding = (int(math.ceil((28-rows)/2.0)),int(math.floor((28-rows)/2.0)))
+        gray = np.pad(gray,(rowsPadding,colsPadding),'constant')
+
+        # сдвигаем центр масс
+        shiftx,shifty = getBestShift(gray)
+        shifted = shift(gray,shiftx,shifty)
+        gray = shifted
+
         cv2.imwrite('gray'+ img_path, gray)
-        gray = cv2.resize(gray, (28, 28))
         img = gray / 255.0
-        img = np.array(img).reshape(-1, 28, 28, 1)
-        print("img", img)
-        # out = str(np.argmax(model.predict(img)))
-        return img
+        img = np.array(img).reshape(-1)
+        out = str(np.argmax(self.net.feedforward(img)))
+        print("out", out)
+        return out
     # Изменение размера кисти
     def set_brush_size(self, new_size):
         self.brush_size = new_size
     def save_canvas(self):
         self.canv.postscript(file='tmp_canvas.ps', colormode='color')
-        # self.rec_digit('tmp_canvas.ps')
         img = Image.open('tmp_canvas.ps')
         img.save('./canvas.png')
-        # pixel_array = np.array(image)
+        # pixel_array = np.array(img)
+        self.rec_digit('./canvas.png')
+
         # print("pixel_array", pixel_array)
         pass
     def image_to_number(self):
-
+        self.rec_digit('canvas.png')
         pass
 
     def setUI(self):
